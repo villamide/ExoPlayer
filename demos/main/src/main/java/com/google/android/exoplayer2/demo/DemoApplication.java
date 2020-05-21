@@ -16,10 +16,13 @@
 package com.google.android.exoplayer2.demo;
 
 import android.app.Application;
+import com.facebook.stetho.Stetho;
+import com.facebook.stetho.okhttp3.StethoInterceptor;
 import com.google.android.exoplayer2.DefaultRenderersFactory;
 import com.google.android.exoplayer2.RenderersFactory;
 import com.google.android.exoplayer2.database.DatabaseProvider;
 import com.google.android.exoplayer2.database.ExoDatabaseProvider;
+import com.google.android.exoplayer2.ext.okhttp.OkHttpDataSourceFactory;
 import com.google.android.exoplayer2.offline.ActionFileUpgradeUtil;
 import com.google.android.exoplayer2.offline.DefaultDownloadIndex;
 import com.google.android.exoplayer2.offline.DefaultDownloaderFactory;
@@ -39,6 +42,7 @@ import com.google.android.exoplayer2.util.Log;
 import com.google.android.exoplayer2.util.Util;
 import java.io.File;
 import java.io.IOException;
+import okhttp3.OkHttpClient;
 
 /**
  * Placeholder application to facilitate overriding Application methods for debugging and testing.
@@ -57,11 +61,16 @@ public class DemoApplication extends Application {
   private Cache downloadCache;
   private DownloadManager downloadManager;
   private DownloadTracker downloadTracker;
+  private OkHttpClient okHttpClient;
 
   @Override
   public void onCreate() {
     super.onCreate();
+    Stetho.initializeWithDefaults(this);
     userAgent = Util.getUserAgent(this, "ExoPlayerDemo");
+    okHttpClient = new OkHttpClient.Builder()
+        .addNetworkInterceptor(new StethoInterceptor())
+        .build();
   }
 
   /** Returns a {@link DataSource.Factory}. */
@@ -73,7 +82,7 @@ public class DemoApplication extends Application {
 
   /** Returns a {@link HttpDataSource.Factory}. */
   public HttpDataSource.Factory buildHttpDataSourceFactory() {
-    return new DefaultHttpDataSourceFactory(userAgent);
+    return new OkHttpDataSourceFactory(okHttpClient, userAgent);
   }
 
   /** Returns whether extension renderers should be used. */
